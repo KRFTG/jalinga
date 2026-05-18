@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Личный кабинет{% endblock %}
+
+{% block content %}
+    <h1>Личный кабинет</h1>
+    <p>Email: {{ user.email }}</p>
+    <p>Имя: {{ user.first_name }}</p>
+    <p>Фамилия: {{ user.last_name }}</p>
+    <p>Отчество: {{ user.middlename }}</p>
+    <p>Телефон: {{ user.phone }}</p>
+    <p><a href="{% url 'profile_edit' %}">Редактировать профиль</a></p>
+    <h2>Мои бронирования</h2>
+    <p><a href="{% url 'bookings:booking_list' %}">Перейти к списку бронирований</a></p>
+    <h2>Уведомления</h2>
+    <p><a href="{% url 'notifications' %}">Посмотреть уведомления</a></p>
+{% endblock %}

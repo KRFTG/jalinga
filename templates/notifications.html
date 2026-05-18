@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}Уведомления{% endblock %}
+
+{% block content %}
+    <h1>Уведомления</h1>
+    {% if notifications %}
+        <ul>
+            {% for n in notifications %}
+                <li>
+                    {{ n.booking.start_time|date:"d.m.Y H:i" }} – {{ n.booking.end_time|date:"d.m.Y H:i" }}
+                    ({{ n.booking.get_status_display }})<br>
+                    {{ n.booking.description }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Нет уведомлений.</p>
+    {% endif %}
+{% endblock %}

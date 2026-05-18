@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Студия "Джалинга"{% endblock %}</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #0056b3;
+            color: white;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 50px;
+            background-color: #0056b3;
+        }
+        .logo { line-height: 1.2; }
+        .logo h1 { margin: 0; font-size: 24px; font-weight: bold; color: white; }
+        .logo p { margin: 0; font-size: 14px; color: white; }
+        nav ul { list-style: none; display: flex; gap: 30px; margin: 0; padding: 0; }
+        nav a { text-decoration: none; color: white; font-size: 16px; opacity: 0.9; }
+        nav a:hover { opacity: 1; }
+        .container {
+            background-color: white;
+            color: black;
+            padding: 30px 50px;
+            min-height: 400px;
+        }
+        footer {
+            background-color: #0056b3;
+            padding: 20px 50px;
+            text-align: center;
+            color: white;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <header>
+        {% load static %}
+        <a href="{% url 'home' %}" style="text-decoration: none; color: inherit;">
+            <div class="logo">
+                <img src="{% static 'images/jalinga_logo.png' %}" alt="Джалинга" style="height: 50px; vertical-align: middle;">
+            </div>
+        </a>
+        <nav>
+            <ul>
+                <li><a href="{% url 'about' %}">О студии</a></li>
+                <li><a href="{% url 'manual' %}">Руководства</a></li>
+                {% if user.is_authenticated %}
+                    <li><a href="{% url 'bookings:create_booking' %}">Бронирование</a></li>
+                    <li><a href="{% url 'profile' %}">Личный кабинет</a></li>
+                    {% if user.is_staff %}
+                        <li><a href="{% url 'admin:index' %}">Администрирование</a></li>
+                    {% endif %}
+                    <li><a href="{% url 'logout' %}">Выход</a></li>
+                {% else %}
+                    <li><a href="{% url 'login' %}">Вход</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer style="text-align: left; padding: 20px 50px;">
+        <p style="margin: 0 0 5px 0;"><strong>Контактная информация</strong></p>
+        <p style="margin: 0 0 5px 0;">e‑mail: cdo_support@sakhgu.ru</p>
+        <p style="margin: 0 0 5px 0;">адрес: ул. Пограничная 2, оф. 503</p>
+        <p style="margin: 0 0 5px 0;">Время работы: с 9.00 ‑ 18.00 Пн ‑ Пт</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+
+{% block title %}Мои бронирования{% endblock %}
+
+{% block extra_head %}
+    <style>
+        .modal {
+            display: none; position: fixed; z-index: 1; left: 0; top: 0;
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe; margin: 5% auto; padding: 20px;
+            border: 1px solid #888; width: 450px; max-height: 80vh; overflow-y: auto;
+        }
+        .close {
+            color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;
+        }
+        .file-item { margin: 5px 0; }
+        .file-item button { margin-left: 10px; }
+        .member-item { margin: 5px 0; }
+        .member-item button { margin-left: 10px; }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <h2>Мои бронирования</h2>
+    {% if messages %}
+        <ul>
+            {% for msg in messages %}<li>{{ msg }}</li>{% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if bookings %}
+        <ul>
+            {% for b in bookings %}
+                <li>
+                    {{ b.start_time|date:"d.m.Y H:i" }} – {{ b.end_time|date:"d.m.Y H:i" }}
+                    — <strong>{{ b.get_status_display }}</strong>
+                    {% if b.status == 'booked' %}
+                        <a href="{% url 'bookings:cancel_booking' b.id %}">Отменить</a>
+                        <button class="edit-btn" data-booking-id="{{ b.id }}">Редактировать</button>
+                    {% endif %}
+                    {% if b.description %}
+                        <br><em>{{ b.description }}</em>
+                    {% endif %}
+                    {% if b.files.all %}
+                        <br>Файлы:
+                        {% for file in b.files.all %}
+                            <a href="{{ file.file.url }}">{{ file.file.name|slice:"12:" }}</a>{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    {% if b.group_members.all %}
+                        <br><strong>Участники:</strong>
+                        <ul>
+                            {% for m in b.group_members.all %}
+                                <li>{{ m.full_name }} ({{ m.email }}) {{ m.phone }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>У вас пока нет бронирований.</p>
+    {% endif %}
+
+    <p><a href="{% url 'bookings:create_booking' %}">Забронировать время</a></p>
+
+    <!-- Модальное окно редактирования -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditModal()">&times;</span>
+            <h3>Редактирование бронирования</h3>
+            <input type="hidden" id="edit-booking-id">
+            <label>Описание:</label>
+            <textarea id="edit-description" rows="3" style="width:100%"></textarea>
+            <br><br>
+            <label>Текущие файлы:</label>
+            <div id="edit-current-files"></div>
+            <br>
+            <label>Добавить файлы:</label>
+            <input type="file" id="edit-new-files" multiple>
+            <br><br>
+
+            <!-- Секция участников (только для групповых броней) -->
+            <div id="edit-members-section" style="display: none;">
+                <h4>Участники</h4>
+                <div id="edit-current-members"></div>
+                <br>
+                <input type="text" id="edit-member-name" placeholder="ФИО" style="width:100%; margin-top:5px;">
+                <input type="email" id="edit-member-email" placeholder="Email" style="width:100%; margin-top:5px;">
+                <input type="tel" id="edit-member-phone" placeholder="Телефон" style="width:100%; margin-top:5px;">
+                <button type="button" id="add-edit-member" style="margin-top:5px;">Добавить участника</button>
+            </div>
+
+            <br>
+            <button id="save-edit-btn">Сохранить</button>
+            <button onclick="closeEditModal()">Отмена</button>
+        </div>
+    </div>
+
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+
+        let editMembers = [];
+
+        function openEditModal(bookingId) {
+            document.getElementById('edit-booking-id').value = bookingId;
+            fetch(`/bookings/edit/${bookingId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('edit-description').value = data.description || '';
+                    const filesDiv = document.getElementById('edit-current-files');
+                    filesDiv.innerHTML = '';
+                    if (data.files && data.files.length > 0) {
+                        data.files.forEach(file => {
+                            const div = document.createElement('div');
+                            div.className = 'file-item';
+                            div.innerHTML = `
+                                <span>${file.name.split('/').pop()}</span>
+                                <button onclick="deleteFile(${file.id}, this)">Удалить</button>
+                                <input type="hidden" class="existing-file-id" value="${file.id}">
+                            `;
+                            filesDiv.appendChild(div);
+                        });
+                    } else {
+                        filesDiv.innerHTML = '<p>Нет прикреплённых файлов.</p>';
+                    }
+                    editMembers = [];
+                    const membersDiv = document.getElementById('edit-current-members');
+                    membersDiv.innerHTML = '';
+                    const membersSection = document.getElementById('edit-members-section');
+                    if (data.members && data.members.length > 0) {
+                        membersSection.style.display = 'block';
+                        data.members.forEach(member => {
+                            editMembers.push({
+                                id: member.id,
+                                full_name: member.full_name,
+                                email: member.email,
+                                phone: member.phone
+                            });
+                            const div = document.createElement('div');
+                            div.className = 'member-item';
+                            div.innerHTML = `
+                                <span>${member.full_name} (${member.email}) ${member.phone}</span>
+                                <button onclick="removeEditMember(${member.id}, this)">Удалить</button>
+                            `;
+                            membersDiv.appendChild(div);
+                        });
+                    } else {
+                        membersSection.style.display = 'none';
+                    }
+                    document.getElementById('edit-modal').style.display = 'block';
+                });
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').style.display = 'none';
+        }
+
+        function deleteFile(fileId, btn) {
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'delete_files';
+            hiddenInput.value = fileId;
+            document.getElementById('edit-modal').appendChild(hiddenInput);
+            btn.parentElement.remove();
+        }
+
+        function removeEditMember(memberId, btn) {
+            editMembers = editMembers.filter(m => m.id !== memberId);
+            btn.parentElement.remove();
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'delete_members';
+            hiddenInput.value = memberId;
+            document.getElementById('edit-modal').appendChild(hiddenInput);
+        }
+
+        document.getElementById('add-edit-member').addEventListener('click', function() {
+            const name = document.getElementById('edit-member-name').value.trim();
+            const email = document.getElementById('edit-member-email').value.trim();
+            const phone = document.getElementById('edit-member-phone').value.trim();
+            if (!name && !email) {
+                alert('Заполните хотя бы имя или email');
+                return;
+            }
+            const newMember = { full_name: name, email: email, phone: phone };
+            editMembers.push(newMember);
+            const membersDiv = document.getElementById('edit-current-members');
+            const div = document.createElement('div');
+            div.className = 'member-item';
+            div.innerHTML = `
+                <span>${name} (${email}) ${phone}</span>
+                <button onclick="this.parentElement.remove(); removeNewMember('${email}')">Удалить</button>
+            `;
+            membersDiv.appendChild(div);
+            document.getElementById('edit-member-name').value = '';
+            document.getElementById('edit-member-email').value = '';
+            document.getElementById('edit-member-phone').value = '';
+        });
+
+        function removeNewMember(email) {
+            editMembers = editMembers.filter(m => m.email !== email || m.id);
+        }
+
+        document.getElementById('save-edit-btn').addEventListener('click', function() {
+            const bookingId = document.getElementById('edit-booking-id').value;
+            const description = document.getElementById('edit-description').value;
+            const formData = new FormData();
+            formData.append('description', description);
+
+            const deleteInputs = document.querySelectorAll('input[name="delete_files"]');
+            deleteInputs.forEach(input => formData.append('delete_files', input.value));
+
+            const newFiles = document.getElementById('edit-new-files').files;
+            for (let i = 0; i < newFiles.length; i++) {
+                formData.append('files', newFiles[i]);
+            }
+
+            const membersToSend = editMembers.map(m => ({
+                id: m.id || null,
+                full_name: m.full_name,
+                email: m.email,
+                phone: m.phone
+            }));
+            formData.append('members', JSON.stringify(membersToSend));
+
+            const deleteMemberInputs = document.querySelectorAll('input[name="delete_members"]');
+            deleteMemberInputs.forEach(input => formData.append('delete_members', input.value));
+
+            fetch(`/bookings/edit/${bookingId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrftoken,
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            });
+        });
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('edit-modal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const bookingId = this.dataset.bookingId;
+                openEditModal(bookingId);
+            });
+        });
+    </script>
+{% endblock %}

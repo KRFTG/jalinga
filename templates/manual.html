@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Руководства пользователя{% endblock %}
+
+{% block extra_head %}
+<style>
+    .manual-page {
+        font-family: 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+    .manual-page h2 {
+        color: #0056b3;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .manual-list {
+        list-style: none;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    .manual-item {
+        background: #f9f9f9;
+        border-left: 5px solid #0056b3;
+        padding: 20px 25px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    .manual-icon {
+        font-size: 40px;
+        opacity: 0.8;
+    }
+    .manual-info {
+        flex: 1;
+    }
+    .manual-info strong {
+        font-size: 18px;
+    }
+    .manual-info p {
+        margin: 5px 0 0;
+        color: #555;
+        font-size: 14px;
+    }
+    .manual-download {
+        background: #0056b3;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        white-space: nowrap;
+        transition: background 0.2s;
+    }
+    .manual-download:hover {
+        background: #003d7a;
+    }
+    @media (max-width: 600px) {
+        .manual-item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .manual-download {
+            align-self: stretch;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="manual-page">
+    <h2>📘 Руководства пользователя студии «Джалинга»</h2>
+    <ul class="manual-list">
+        <!-- Здесь перечислены твои PDF-файлы. Меняй названия и имена файлов по необходимости -->
+        <li class="manual-item">
+            <span class="manual-icon">📄</span>
+            <div class="manual-info">
+                <strong>Как работать с 3D-моделями в студии джалинга</strong>
+            </div>
+            <a href="{{ MEDIA_URL }}manuals/3d_models.pdf" class="manual-download" >Скачать PDF</a>
+        </li>
+        <li class="manual-item">
+            <span class="manual-icon">📄</span>
+            <div class="manual-info">
+                <strong>Памятка по созданию презентации для студии Джалинга</strong>
+            </div>
+            <a href="{{ MEDIA_URL }}manuals/memo_on_creating_presentations_for_jalinga_studio.pdf" class="manual-download" >Скачать PDF</a>
+        </li>
+        <li class="manual-item">
+            <span class="manual-icon">📄</span>
+            <div class="manual-info">
+                <strong>ИИ Слайды</strong>
+            </div>
+            <a href="{{ MEDIA_URL }}manuals/ai_slides.pdf" class="manual-download" >Скачать PDF</a>
+        </li>
+        <li class="manual-item">
+            <span class="manual-icon">📄</span>
+            <div class="manual-info">
+                <strong>Инструкция по использованию Джалинга ИИ</strong>
+            </div>
+            <a href="{{ MEDIA_URL }}manuals/ai_materials_in_jalinga.pdf" class="manual-download" >Скачать PDF</a>
+        </li>
+        <li class="manual-item">
+            <span class="manual-icon">📄</span>
+            <div class="manual-info">
+                <strong>Инструкция по созданию вертикальных роликов в Джалинга</strong>
+            </div>
+            <a href="{{ MEDIA_URL }}manuals/vertical_videos.pdf" class="manual-download" >Скачать PDF</a>
+        </li>
+        <li class="manual-item">
+            <span class="manual-icon">📄</span>
+            <div class="manual-info">
+                <strong>Инструкция по созданию субтитров в Джалинга</strong>
+            </div>
+            <a href="{{ MEDIA_URL }}manuals/subtitles.pdf" class="manual-download" >Скачать PDF</a>
+        </li>
+        <li class="manual-item">
+            <span class="manual-icon">📄</span>
+            <div class="manual-info">
+                <strong>Инструкция по работе с Мегакласс</strong>
+            </div>
+            <a href="{{ MEDIA_URL }}manuals/mega.pdf" class="manual-download" >Скачать PDF</a>
+        </li>
+        <li class="manual-item">
+            <span class="manual-icon">📄</span>
+            <div class="manual-info">
+                <strong>Инструкция по добавлению шрифтов</strong>
+            </div>
+            <a href="{{ MEDIA_URL }}manuals/fonts.pdf" class="manual-download" >Скачать PDF</a>
+        </li>
+        <li class="manual-item">
+            <span class="manual-icon">📄</span>
+            <div class="manual-info">
+                <strong>Памятка по ресурсам и инструментам</strong>
+            </div>
+            <a href="{{ MEDIA_URL }}manuals/resources.pdf" class="manual-download" >Скачать PDF</a>
+        </li>
+        <li class="manual-item">
+            <span class="manual-icon">📄</span>
+            <div class="manual-info">
+                <strong>Технические настройки студии</strong>
+            </div>
+            <a href="{{ MEDIA_URL }}manuals/technical.pdf" class="manual-download" >Скачать PDF</a>
+        </li>
+        <li class="manual-item">
+            <span class="manual-icon">📄</span>
+            <div class="manual-info">
+                <strong>Инструкция по работе с Джалинга Quick</strong>
+            </div>
+            <a href="{{ MEDIA_URL }}manuals/jalinga_quick.pdf" class="manual-download" >Скачать PDF</a>
+        </li>
+        <li class="manual-item">
+            <span class="manual-icon">📄</span>
+            <div class="manual-info">
+                <strong>Инструкция по работе с хромакеем</strong>
+            </div>
+            <a href="{{ MEDIA_URL }}manuals/chroma.pdf" class="manual-download" >Скачать PDF</a>
+        </li>
+        <li class="manual-item">
+            <span class="manual-icon">📄</span>
+            <div class="manual-info">
+                <strong>Инструкция по работе с телесуфлером</strong>
+            </div>
+            <a href="{{ MEDIA_URL }}manuals/teles.pdf" class="manual-download" >Скачать PDF</a>
+        </li>
+        <li class="manual-item">
+            <span class="manual-icon">📄</span>
+            <div class="manual-info">
+                <strong>Гайд по работе в Веб-Редакторе</strong>
+            </div>
+            <a href="{{ MEDIA_URL }}manuals/jweb.pdf" class="manual-download" >Скачать PDF</a>
+        </li>
+    </ul>
+</div>
+{% endblock %}

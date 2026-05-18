@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+
+{% block title %}Бронирование студии{% endblock %}
+
+{% block extra_head %}
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+    <style>
+        #calendar { max-width: 900px; margin: 0 auto; float: left; width: 70%; }
+        #side-panel { width: 28%; float: right; padding: 10px; border-left: 1px solid #ccc; min-height: 500px; }
+        .slot-btn { display: block; margin: 5px 0; padding: 8px; border: none; cursor: pointer; width: 100%; }
+        .slot-available { background: #28a745; color: white; }
+        .slot-student { background: #fd7e14; color: white; }
+        .slot-unavailable { background: #ccc; color: #555; cursor: not-allowed; }
+
+        .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 400px; max-height: 80vh; overflow-y: auto; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <h2>Бронирование студии</h2>
+    <div id="calendar"></div>
+    <div id="side-panel">
+        <h3>Выберите день</h3>
+        <div id="slots-container">
+            <p>Нажмите на день в календаре.</p>
+        </div>
+    </div>
+    <div style="clear: both;"></div>
+    <!-- Модальное окно -->
+    <div id="booking-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3 id="modal-title">Подтвердите бронирование</h3>
+            <p>Слот: <strong id="modal-slot-time"></strong></p>
+            <p id="modal-warning" style="color: red; display: none;"></p>
+            <label for="modal-description">Цель визита:</label>
+            <textarea id="modal-description" rows="3" style="width:100%"></textarea>
+            <br><br>
+            <label for="modal-file">Файлы:</label>
+            <input type="file" id="modal-file" multiple>
+            <br><br>
+
+            <!-- Групповая заявка (видна только преподавателям и гостям) -->
+            <div id="group-section" style="display: {{ is_teacher|yesno:"block,none" }};">
+                <label>
+                    <input type="checkbox" id="group-checkbox"> Групповая заявка
+                </label>
+                <div id="group-members" style="display: none; margin-top: 10px;">
+                    <div id="members-list"></div>
+                    <input type="text" id="member-name" placeholder="ФИО" style="width:100%; margin-top:5px;">
+                    <input type="email" id="member-email" placeholder="Email" style="width:100%; margin-top:5px;">
+                    <input type="tel" id="member-phone" placeholder="Телефон" style="width:100%; margin-top:5px;">
+                    <button type="button" id="add-member" style="margin-top:5px;">Добавить участника</button>
+                </div>
+            </div>
+
+            <br>
+            <button id="modal-confirm" class="slot-available">Подтвердить</button>
+            <button onclick="closeModal()" style="background:#aaa;">Отмена</button>
+        </div>
+    </div>
+
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+    <script>
+        const userIsTeacher = {{ is_teacher|yesno:"true,false" }};
+        const calendarEl = document.getElementById('calendar');
+        const slotsContainer = document.getElementById('slots-container');
+        const modal = document.getElementById('booking-modal');
+        const modalSlotTime = document.getElementById('modal-slot-time');
+        const modalDescription = document.getElementById('modal-description');
+        const modalFile = document.getElementById('modal-file');
+        const modalConfirm = document.getElementById('modal-confirm');
+        const modalWarning = document.getElementById('modal-warning');
+        const modalTitle = document.getElementById('modal-title');
+
+        let currentSlotStart = null;
+        let currentOccupiedBy = null;
+
+        // Массив участников
+        let groupMembers = [];
+
+        function toLocalDateString(date) {
+            return date.toLocaleDateString('sv-SE');
+        }
+
+        function fetchCalendarData(info, successCallback) {
+            const start = toLocalDateString(info.start);
+            const end = toLocalDateString(info.end);
+            fetch(`{% url 'bookings:get_calendar_data' %}?start=${start}&end=${end}`)
+                .then(response => response.json())
+                .then(data => {
+                    data.days.forEach(day => {
+                        const cell = document.querySelector(`.fc-day[data-date="${day.date}"]`);
+                        if (cell) {
+                            cell.setAttribute('data-slots', JSON.stringify(day.slots));
+                        }
+                    });
+                    if (successCallback) successCallback();
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки данных календаря:', error);
+                    if (successCallback) successCallback();
+                });
+        }
+
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'ru',
+            firstDay: 1,
+            buttonText: {
+                today: 'Сегодня',
+                month: 'Месяц',
+            },
+            headerToolbar: {
+                left: 'prev,next',
+                center: 'title',
+                right: ''
+            },
+            height: 'auto',
+            datesSet: function(info) {
+                fetchCalendarData(info);
+            },
+            dateClick: function(info) {
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                if (info.date < today) {
+                    alert('Нельзя бронировать прошедшую дату.');
+                    return;
+                }
+                const cell = info.dayEl;
+                const slots = JSON.parse(cell.getAttribute('data-slots') || '[]');
+                showSlots(slots, info.dateStr);
+            },
+            dayCellDidMount: function(info) {
+                const localDate = toLocalDateString(info.date);
+                info.el.setAttribute('data-date', localDate);
+            }
+        });
+
+        calendar.render();
+
+        // Обработчик чекбокса групповой заявки
+        document.getElementById('group-checkbox').addEventListener('change', function() {
+            const groupDiv = document.getElementById('group-members');
+            groupDiv.style.display = this.checked ? 'block' : 'none';
+            if (!this.checked) {
+                groupMembers = [];
+                renderMembersList();
+            }
+        });
+
+        // Добавление участника
+        document.getElementById('add-member').addEventListener('click', function() {
+            const name = document.getElementById('member-name').value.trim();
+            const email = document.getElementById('member-email').value.trim();
+            const phone = document.getElementById('member-phone').value.trim();
+            if (!name && !email) {
+                alert('Введите имя или email');
+                return;
+            }
+            groupMembers.push({ full_name: name, email: email, phone: phone });
+            renderMembersList();
+            document.getElementById('member-name').value = '';
+            document.getElementById('member-email').value = '';
+            document.getElementById('member-phone').value = '';
+        });
+
+        function renderMembersList() {
+            const list = document.getElementById('members-list');
+            list.innerHTML = '';
+            groupMembers.forEach((m, idx) => {
+                const div = document.createElement('div');
+                div.innerHTML = `${m.full_name} (${m.email}) ${m.phone} <button data-index="${idx}" class="remove-member">Удалить</button>`;
+                list.appendChild(div);
+            });
+            document.querySelectorAll('.remove-member').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const i = parseInt(this.dataset.index);
+                    groupMembers.splice(i, 1);
+                    renderMembersList();
+                });
+            });
+        }
+
+        function showSlots(slots, dateStr) {
+            slotsContainer.innerHTML = `<h4>${dateStr}</h4>`;
+            if (slots.length === 0) {
+                slotsContainer.innerHTML += '<p>Нет доступных слотов.</p>';
+                return;
+            }
+            const isTeacher = userIsTeacher;
+            slots.forEach(slot => {
+                const btn = document.createElement('button');
+                btn.className = 'slot-btn';
+                if (slot.available) {
+                    btn.classList.add('slot-available');
+                    btn.textContent = slot.time + ' (свободно)';
+                    btn.addEventListener('click', () => openBookingModal(slot.start, null));
+                } else if (slot.occupied_by === 'exception') {
+                    btn.classList.add('slot-unavailable');
+                    btn.textContent = slot.time + ' (недоступно)';
+                    btn.disabled = true;
+                } else if (slot.occupied_by === 'teacher') {
+                    btn.classList.add('slot-unavailable');
+                    btn.textContent = slot.time + ' (преподаватель)';
+                    btn.disabled = true;
+                } else if (slot.occupied_by === 'student') {
+                    btn.textContent = slot.time + (slot.details ? ' (' + slot.details + ')' : ' (занято)');
+                    if (isTeacher) {
+                        btn.classList.add('slot-student');
+                        btn.addEventListener('click', () => openBookingModal(slot.start, 'student'));
+                    } else {
+                        btn.classList.add('slot-unavailable');
+                        btn.disabled = true;
+                    }
+                } else {
+                    btn.classList.add('slot-unavailable');
+                    btn.textContent = slot.time;
+                    btn.disabled = true;
+                }
+                slotsContainer.appendChild(btn);
+            });
+        }
+
+        function openBookingModal(startIso, occupiedBy) {
+            currentSlotStart = startIso;
+            currentOccupiedBy = occupiedBy;
+            const dateObj = new Date(startIso);
+            const endObj = new Date(dateObj.getTime() + 3600000);
+            modalSlotTime.textContent = dateObj.toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'}) + ' – ' + endObj.toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'});
+            modalDescription.value = '';
+            modalFile.value = '';
+            groupMembers = [];
+            renderMembersList();
+            document.getElementById('group-checkbox').checked = false;
+            document.getElementById('group-members').style.display = 'none';
+            if (occupiedBy === 'student') {
+                modalWarning.textContent = 'Это время занято студентом/гостем. При подтверждении его бронь будет отменена.';
+                modalWarning.style.display = 'block';
+                modalTitle.textContent = 'Вытеснение брони';
+            } else {
+                modalWarning.style.display = 'none';
+                modalTitle.textContent = 'Подтвердите бронирование';
+            }
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+            currentSlotStart = null;
+            currentOccupiedBy = null;
+        }
+
+        document.getElementsByClassName('close')[0].addEventListener('click', closeModal);
+        window.addEventListener('click', function(event) {
+            if (event.target == modal) closeModal();
+        });
+
+        modalConfirm.addEventListener('click', function() {
+            if (!currentSlotStart) return;
+            const formData = new FormData();
+            formData.append('start_time', currentSlotStart);
+            formData.append('description', modalDescription.value);
+            const fileInput = modalFile;
+            for (let i = 0; i < fileInput.files.length; i++) {
+                formData.append('file', fileInput.files[i]);
+            }
+            if (document.getElementById('group-checkbox').checked) {
+                formData.append('members', JSON.stringify(groupMembers));
+            }
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            fetch('{% url "bookings:create_booking" %}', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            });
+        });
+    </script>
+{% endblock %}
