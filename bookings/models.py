@@ -3,6 +3,16 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.core.validators import FileExtensionValidator
 
+class Equipment(models.Model):
+    name = models.CharField(_('название'), max_length=100)
+
+    class Meta:
+        verbose_name = _('единица оборудования')
+        verbose_name_plural = _('оборудование')
+
+    def __str__(self):
+        return self.name
+    
 class Booking(models.Model):
     class Status(models.TextChoices):
         BOOKED = 'booked', _('Забронировано')
@@ -18,6 +28,11 @@ class Booking(models.Model):
     start_time = models.DateTimeField(_('начало'))
     end_time = models.DateTimeField(_('конец'))
     description = models.TextField(_('описание'), blank=True)
+    equipment = models.ManyToManyField(
+        Equipment,
+        blank=True,
+        verbose_name=_('оборудование')
+    )
     status = models.CharField(
         _('статус'),
         max_length=20,
@@ -54,12 +69,15 @@ class StudioSchedule(models.Model):
     day_of_week = models.IntegerField(_('день недели (1=Пн, 7=Вс)'))
     start_time = models.TimeField(_('время начала работы'))
     end_time = models.TimeField(_('время окончания работы'))
+    specific_date = models.DateField(_('конкретная дата'), null=True, blank=True)
 
     class Meta:
         verbose_name = _('рабочие часы')
         verbose_name_plural = _('рабочие часы')
 
     def __str__(self):
+        if self.specific_date:
+            return f'{self.specific_date.strftime("%d.%m.%Y")} {self.start_time}–{self.end_time} (спец. день)'
         days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
         return f'{days[self.day_of_week - 1]} {self.start_time}–{self.end_time}'
 

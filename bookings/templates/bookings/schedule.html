@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Календарь планирования{% endblock %}
+{% block content %}
+<h2>Календарь планирования съёмок</h2>
+<label for="schedule-date">Выберите дату:</label>
+<input type="date" id="schedule-date" min="{{ today|date:'Y-m-d' }}">
+<br><br>
+<table id="schedule-table" border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+    <thead>
+        <tr>
+            <th>Время</th>
+            <th>Статус</th>
+            <th>Кто</th>
+            <th>Цель</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td colspan="4">Выберите дату для просмотра расписания.</td></tr>
+    </tbody>
+</table>
+
+<script>
+    const dateInput = document.getElementById('schedule-date');
+    const tbody = document.querySelector('#schedule-table tbody');
+
+    dateInput.addEventListener('change', function() {
+        const date = this.value;
+        if (!date) return;
+        tbody.innerHTML = '<tr><td colspan="4">Загрузка...</td></tr>';
+        fetch(`{% url 'bookings:schedule_data' %}?date=${date}`)
+            .then(res => res.json())
+            .then(data => {
+                tbody.innerHTML = '';
+                if (data.slots.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4">Нет слотов (нерабочий день)</td></tr>';
+                    return;
+                }
+                data.slots.forEach(slot => {
+                    const row = document.createElement('tr');
+                    const statusCell = document.createElement('td');
+                    if (slot.status === 'free') {
+                        statusCell.textContent = 'Свободно';
+                        statusCell.style.color = 'green';
+                    } else if (slot.status === 'busy') {
+                        statusCell.textContent = 'Занято';
+                        statusCell.style.color = 'red';
+                    } else {
+                        statusCell.textContent = 'Недоступно';
+                        statusCell.style.color = 'gray';
+                    }
+                    row.innerHTML = `
+                        <td>${slot.time}</td>
+                    `;
+                    row.appendChild(statusCell);
+                    row.innerHTML += `
+                        <td>${slot.occupant}</td>
+                        <td>${slot.description}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            });
+    });
+</script>
+{% endblock %}

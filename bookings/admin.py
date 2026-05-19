@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import Booking, StudioSchedule, StudioException
+from .models import Equipment
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
@@ -14,3 +15,7 @@ class ScheduleAdmin(admin.ModelAdmin):
 @admin.register(StudioException)
 class ExceptionAdmin(admin.ModelAdmin):
     list_display = ('date', 'start_time', 'end_time', 'reason')
+
+@admin.register(Equipment)
+class EquipmentAdmin(admin.ModelAdmin):
+    list_display = ('name',)

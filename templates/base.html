@@ -52,6 +52,9 @@
                 <li><a href="{% url 'manual' %}">Руководства</a></li>
                 {% if user.is_authenticated %}
                     <li><a href="{% url 'bookings:create_booking' %}">Бронирование</a></li>
+                    {% if user.is_staff or user.groups.all.0.name == 'Teachers' %}
+                        <li><a href="{% url 'bookings:schedule' %}">Календарь планирования</a></li>
+                    {% endif %}
                     <li><a href="{% url 'profile' %}">Личный кабинет</a></li>
                     {% if user.is_staff %}
                         <li><a href="{% url 'admin:index' %}">Администрирование</a></li>

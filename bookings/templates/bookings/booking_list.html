@@ -49,6 +49,12 @@
                             <a href="{{ file.file.url }}">{{ file.file.name|slice:"12:" }}</a>{% if not forloop.last %}, {% endif %}
                         {% endfor %}
                     {% endif %}
+                    {% if b.equipment.all %}
+                        <br><strong>Оборудование:</strong>
+                        {% for eq in b.equipment.all %}
+                            {{ eq.name }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    {% endif %}
                     {% if b.group_members.all %}
                         <br><strong>Участники:</strong>
                         <ul>
@@ -91,6 +97,19 @@
                 <input type="email" id="edit-member-email" placeholder="Email" style="width:100%; margin-top:5px;">
                 <input type="tel" id="edit-member-phone" placeholder="Телефон" style="width:100%; margin-top:5px;">
                 <button type="button" id="add-edit-member" style="margin-top:5px;">Добавить участника</button>
+            </div>
+
+            <div id="edit-equipment-section" style="margin-top: 10px; text-align: left;">
+                <h4>Оборудование</h4>
+                {% if all_equipment %}
+                    {% for eq in all_equipment %}
+                        <label style="font-weight: normal; display: block;">
+                            <input type="checkbox" name="edit_equipment" value="{{ eq.id }}" class="edit-equipment-checkbox"> {{ eq.name }}
+                        </label>
+                    {% endfor %}
+                {% else %}
+                    <p>Нет доступного оборудования</p>
+                {% endif %}
             </div>
 
             <br>
@@ -166,6 +185,15 @@
                     }
                     document.getElementById('edit-modal').style.display = 'block';
                 });
+
+                // Оборудование
+                document.querySelectorAll('.edit-equipment-checkbox').forEach(cb => cb.checked = false);
+                if (data.equipment) {
+                    data.equipment.forEach(id => {
+                        const cb = document.querySelector(`.edit-equipment-checkbox[value="${id}"]`);
+                        if (cb) cb.checked = true;
+                });
+}
         }
 
         function closeEditModal() {
@@ -222,6 +250,8 @@
             const bookingId = document.getElementById('edit-booking-id').value;
             const description = document.getElementById('edit-description').value;
             const formData = new FormData();
+            const editEquipmentCheckboxes = document.querySelectorAll('.edit-equipment-checkbox:checked');
+            editEquipmentCheckboxes.forEach(cb => formData.append('equipment', cb.value));
             formData.append('description', description);
 
             const deleteInputs = document.querySelectorAll('input[name="delete_files"]');

@@ -5,16 +5,19 @@
 {% block content %}
     <h1>Уведомления</h1>
     {% if notifications %}
+        <p>Последние изменения ваших бронирований:</p>
         <ul>
-            {% for n in notifications %}
+            {% for booking in notifications %}
                 <li>
-                    {{ n.booking.start_time|date:"d.m.Y H:i" }} – {{ n.booking.end_time|date:"d.m.Y H:i" }}
-                    ({{ n.booking.get_status_display }})<br>
-                    {{ n.booking.description }}
+                    {{ booking.start_time|date:"d.m.Y H:i" }} – {{ booking.end_time|date:"d.m.Y H:i" }}
+                    — <strong>{{ booking.get_status_display }}</strong>
+                    {% if booking.description %}
+                        ({{ booking.description|truncatechars:50 }})
+                    {% endif %}
                 </li>
             {% endfor %}
         </ul>
     {% else %}
-        <p>Нет уведомлений.</p>
+        <p>Уведомлений пока нет.</p>
     {% endif %}
 {% endblock %}

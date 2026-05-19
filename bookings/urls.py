@@ -10,4 +10,6 @@ urlpatterns = [
     path('get-slots/', views.get_slots, name='get_slots'),
     path('edit/<int:booking_id>/', views.edit_booking, name='edit_booking'),
     path('calendar-data/', views.get_calendar_data, name='get_calendar_data'),
+    path('schedule/', views.schedule_view, name='schedule'),
+    path('schedule/data/', views.schedule_data, name='schedule_data'),
 ]

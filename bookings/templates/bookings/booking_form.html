@@ -12,9 +12,14 @@
         .slot-student { background: #fd7e14; color: white; }
         .slot-unavailable { background: #ccc; color: #555; cursor: not-allowed; }
 
-        .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); }
+        .modal { display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); }
         .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 400px; max-height: 80vh; overflow-y: auto; }
         .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+
+        /* Чтобы заголовки календаря не перекрывали модальное окно */
+        .fc-scrollgrid-section-header {
+            z-index: 0 !important;
+        }
     </style>
 {% endblock %}
 
@@ -57,6 +62,16 @@
             </div>
 
             <br>
+            {% if all_equipment %}
+                <div style="margin-top: 10px; text-align: left;">
+                    <label><strong>Оборудование:</strong></label><br>
+                    {% for eq in all_equipment %}
+                        <label style="font-weight: normal; display: block;">
+                            <input type="checkbox" name="equipment" value="{{ eq.id }}"> {{ eq.name }}
+                        </label>
+                    {% endfor %}
+                </div>
+            {% endif %}
             <button id="modal-confirm" class="slot-available">Подтвердить</button>
             <button onclick="closeModal()" style="background:#aaa;">Отмена</button>
         </div>
@@ -123,15 +138,25 @@
                 fetchCalendarData(info);
             },
             dateClick: function(info) {
-                const today = new Date();
-                today.setHours(0,0,0,0);
-                if (info.date < today) {
-                    alert('Нельзя бронировать прошедшую дату.');
-                    return;
-                }
-                const cell = info.dayEl;
-                const slots = JSON.parse(cell.getAttribute('data-slots') || '[]');
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            if (info.date < today) {
+                // Вместо alert показываем сообщение в боковой панели
+                slotsContainer.innerHTML = `<h4>${info.dateStr}</h4><p>Нельзя бронировать прошедшую дату.</p>`;
+                return;
+            }
+            // Дни других месяцев не активны
+            if (info.dayEl.classList.contains('fc-day-other')) {
+                return;
+            }
+            const cell = info.dayEl;
+            const slots = JSON.parse(cell.getAttribute('data-slots') || '[]');
+            if (slots.length > 0) {
                 showSlots(slots, info.dateStr);
+            } else {
+                // Если слотов нет (пустой день) - тоже сообщение в панели
+                slotsContainer.innerHTML = `<h4>${info.dateStr}</h4><p>Нет доступных слотов.</p>`;
+            }
             },
             dayCellDidMount: function(info) {
                 const localDate = toLocalDateString(info.date);
@@ -270,6 +295,12 @@
             if (document.getElementById('group-checkbox').checked) {
                 formData.append('members', JSON.stringify(groupMembers));
             }
+            // Собираем отмеченные чекбоксы оборудования
+            const equipmentCheckboxes = document.querySelectorAll('input[name="equipment"]:checked');
+            equipmentCheckboxes.forEach(function(cb) {
+            formData.append('equipment', cb.value);
+            });
+            
             formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
             fetch('{% url "bookings:create_booking" %}', {
                 method: 'POST',

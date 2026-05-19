@@ -1,5 +1,5 @@
 from django import forms
-from .models import Booking
+from .models import Booking, StudioSchedule, StudioException
 from django.utils import timezone
 
 class BookingForm(forms.ModelForm):
@@ -25,32 +25,33 @@ class BookingForm(forms.ModelForm):
             return cleaned_data
 
         now = timezone.now()
-        # 1. не в прошлом
         if start < now:
             raise forms.ValidationError('Нельзя бронировать прошедшее время.')
         if end <= start:
             raise forms.ValidationError('Окончание должно быть позже начала.')
 
-        # 2. рабочий день и часы
-        from .models import StudioSchedule
+        # 1. Проверка рабочего дня и часов с учётом specific_date
+        booking_date = start.date()
         day_of_week = start.isoweekday()
-        schedule = StudioSchedule.objects.filter(day_of_week=day_of_week)
-        if not schedule.exists():
-            raise forms.ValidationError('В этот день студия не работает.')
-        start_time = start.time()
-        end_time = end.time()
-        ok = any(s.start_time <= start_time and end_time <= s.end_time for s in schedule)
-        if not ok:
-            raise forms.ValidationError('Время должно попадать в рабочие часы.')
 
-        # 3. исключения
-        from .models import StudioException
-        exc_list = StudioException.objects.filter(date=start.date())
-        for exc in exc_list:
-            if start_time < exc.end_time and end_time > exc.start_time:
+        # Сначала ищем специальный день на эту дату
+        schedule = StudioSchedule.objects.filter(specific_date=booking_date).first()
+        if not schedule:
+            # Если нет спец. дня, берём обычное расписание по дню недели
+            schedule = StudioSchedule.objects.filter(day_of_week=day_of_week).first()
+
+        if not schedule:
+            raise forms.ValidationError('В этот день студия не работает.')
+        if not (schedule.start_time <= start.time() and end.time() <= schedule.end_time):
+            raise forms.ValidationError('Бронирование должно полностью попадать в рабочие часы.')
+
+        # 2. Проверка исключений (StudioException)
+        exceptions = StudioException.objects.filter(date=booking_date)
+        for exc in exceptions:
+            if start.time() < exc.end_time and end.time() > exc.start_time:
                 raise forms.ValidationError(f'Это время недоступно: {exc.reason or "исключение"}.')
 
-        # 4. конфликты
+        # 3. Конфликты с другими бронями (без изменений)
         conflicts = Booking.objects.filter(
             status__in=['booked', 'completed'],
             start_time__lt=end,
