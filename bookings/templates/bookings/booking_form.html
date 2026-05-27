@@ -48,7 +48,7 @@
             <br><br>
 
             <!-- Групповая заявка (видна только преподавателям и гостям) -->
-            <div id="group-section" style="display: {{ is_teacher|yesno:"block,none" }};">
+            <div id="group-section" style="display: {% if is_teacher or is_admin %}block{% else %}none{% endif %};">
                 <label>
                     <input type="checkbox" id="group-checkbox"> Групповая заявка
                 </label>
@@ -79,7 +79,7 @@
 
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
     <script>
-        const userIsTeacher = {{ is_teacher|yesno:"true,false" }};
+        const userIsTeacher = {% if is_teacher or is_admin %}true{% else %}false{% endif %};
         const calendarEl = document.getElementById('calendar');
         const slotsContainer = document.getElementById('slots-container');
         const modal = document.getElementById('booking-modal');

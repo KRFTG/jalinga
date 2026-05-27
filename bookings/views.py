@@ -285,10 +285,12 @@ def create_booking(request):
     # GET
     today = dj_timezone.now().date()
     is_teacher = request.user.groups.filter(name='Teachers').exists()
+    is_admin = request.user.is_staff  # ← новая строка
     all_equipment = Equipment.objects.all()
     return render(request, 'bookings/booking_form.html', {
         'today': today,
         'is_teacher': is_teacher,
+        'is_admin': is_admin,          # ← передаём в шаблон
         'all_equipment': all_equipment,
     })
 
@@ -463,74 +465,14 @@ def is_teacher_or_admin(user):
 
 @user_passes_test(is_teacher_or_admin, login_url='/accounts/login/')
 def schedule_view(request):
-    return render(request, 'bookings/schedule.html')
+    # Показываем завершённые (прошедшие) и будущие активные брони
+    bookings = Booking.objects.filter(
+        status__in=['completed', 'booked']
+    ).select_related('user').prefetch_related('equipment').order_by('-start_time')
+    
+    return render(request, 'bookings/schedule.html', {'bookings': bookings})
 
 @user_passes_test(is_teacher_or_admin, login_url='/accounts/login/')
 def schedule_data(request):
-    date_str = request.GET.get('date')
-    if not date_str:
-        return JsonResponse({'slots': []})
-
-    try:
-        date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
-    except ValueError:
-        return JsonResponse({'slots': []})
-
-    dow = date.isoweekday()
-    schedule = StudioSchedule.objects.filter(day_of_week=dow).first()
-    if not schedule:
-        return JsonResponse({'slots': []})  # нерабочий день
-
-    # Специальный день
-    special = StudioSchedule.objects.filter(specific_date=date).first()
-    if special:
-        schedule = special
-
-    exceptions = StudioException.objects.filter(date=date)
-    bookings = Booking.objects.filter(
-        status__in=['booked', 'completed'],
-        start_time__date=date
-    ).select_related('user')
-
-    slots = []
-    start_hour = schedule.start_time.hour
-    end_hour = schedule.end_time.hour
-
-    for hour in range(start_hour, end_hour):
-        slot_start = timezone.make_aware(datetime.datetime.combine(date, datetime.time(hour, 0)))
-        slot_end = slot_start + datetime.timedelta(hours=1)
-        status = 'free'
-        occupant = ''
-        description = ''
-
-        # Исключения
-        blocked = False
-        for exc in exceptions:
-            exc_start = timezone.make_aware(datetime.datetime.combine(date, exc.start_time))
-            exc_end = timezone.make_aware(datetime.datetime.combine(date, exc.end_time))
-            if slot_start < exc_end and slot_end > exc_start:
-                status = 'exception'
-                blocked = True
-                description = exc.reason or 'Исключение'
-                break
-
-        # Брони
-        if not blocked:
-            slot_bookings = [
-                b for b in bookings
-                if b.start_time < slot_end and b.end_time > slot_start
-            ]
-            if slot_bookings:
-                b = slot_bookings[0]
-                status = 'busy'
-                occupant = b.user.email
-                description = b.description or '—'
-
-        slots.append({
-            'time': f'{hour:02d}:00 – {hour+1:02d}:00',
-            'status': status,
-            'occupant': occupant,
-            'description': description,
-        })
-
-    return JsonResponse({'slots': slots})
+    # Этот эндпоинт больше не нужен, но оставим заглушку для совместимости
+    return JsonResponse({'bookings': []})
