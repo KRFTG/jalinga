@@ -1,0 +1,96 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{% block content %}
+<div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+    <h2 style="margin-top: 0;">📊 Панель управления студией</h2>
+
+    <!-- Сводка -->
+    <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 30px;">
+        <div style="flex: 1; min-width: 130px; background: #fff; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <strong>Всего броней</strong><br>
+            <span style="font-size: 28px;">{{ total_bookings }}</span>
+        </div>
+        <div style="flex: 1; min-width: 130px; background: #fff; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <strong>Активных</strong><br>
+            <span style="font-size: 28px;">{{ active_bookings }}</span>
+        </div>
+        <div style="flex: 1; min-width: 130px; background: #fff; padding: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <strong>Пользователей</strong><br>
+            <span style="font-size: 28px;">{{ total_users }}</span>
+        </div>
+    </div>
+
+    <!-- Переключатели периода -->
+    <div style="margin-bottom: 15px;">
+        <label for="periodSelect" style="font-weight: bold;">📈 Бронирования за период:</label>
+        <select id="periodSelect" onchange="loadChart(this.value)" style="padding: 6px 10px; border: 1px solid #ced4da; border-radius: 4px; margin-left: 10px;">
+            <option value="7">Неделя</option>
+            <option value="30">Месяц</option>
+            <option value="180">Семестр</option>
+            <option value="365">Год</option>
+        </select>
+    </div>
+    <canvas id="bookingChart" width="400" height="180"></canvas>
+
+    <!-- Оборудование -->
+    <h3 style="margin-top: 30px;">🛠 Использование оборудования</h3>
+    <table style="width: 100%; border-collapse: collapse; background: #fff;">
+        <thead>
+            <tr style="background: #e9ecef;">
+                <th style="padding: 8px; text-align: left;">Оборудование</th>
+                <th style="padding: 8px; text-align: left;">Использований</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in equipment_usage %}
+            <tr>
+                <td style="padding: 8px;">{{ item.name }}</td>
+                <td style="padding: 8px;">{{ item.usage_count }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="2" style="padding: 8px;">Нет данных</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{{ block.super }}
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+let myChart = null;
+
+function loadChart(days) {
+    fetch(`{% url "admin:booking_chart_data" %}?days=${days}`)
+        .then(res => res.json())
+        .then(data => {
+            const ctx = document.getElementById('bookingChart').getContext('2d');
+            if (myChart) {
+                myChart.destroy();
+            }
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Брони',
+                        data: data.values,
+                        backgroundColor: '#0056b3'
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                    }
+                }
+            });
+        });
+}
+
+document.addEventListener('DOMContentLoaded', () => loadChart(7));
+</script>
+{% endblock %}
