@@ -1,244 +1,56 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Джалинга — Цифровая трансформация{% endblock %}
+{% block title %}Джалинга — Студия самозаписи{% endblock %}
 
 {% block extra_head %}
-    <style>
-        /* Перекрываем фон body и убираем отступы у контейнера */
-        body {
-            background-color: white !important;
-        }
-        .container {
-            background-color: transparent !important;
-            padding: 0 !important;
-            max-width: 100% !important;
-        }
-
-        /* Общие стили текста */
-        p, li {
-            font-size: 18px;
-            line-height: 1.7;
-        }
-
-        :root {
-            --blue-bg: #0056b3;
-            --orange-main: #e67e22;
-            --light-bg: #f8f9fa;
-            --mint-bg: #e0f2f1;
-            --text-dark: #333;
-        }
-
-        /* Уменьшаем отступы секций */
-        .intro-section {
-            padding: 30px 20px;
-            text-align: center;
-            background-color: white;
-        }
-        .intro-section h1 {
-            font-size: 32px;
-            color: var(--blue-bg);
-            max-width: 800px;
-            margin: 0 auto 20px;
-        }
-        .intro-section p {
-            max-width: 700px;
-            margin: 0 auto;
-            color: #666;
-        }
-
-        .tech-global {
-            padding: 30px 20px;
-            background-color: white;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-        .highlight-orange {
-            background-color: var(--orange-main);
-            color: white;
-            padding: 2px 10px;
-            border-radius: 8px;
-        }
-        .tech-global h2 {
-            font-size: 36px;
-            margin-bottom: 30px;
-        }
-
-        .promo-banner {
-            background-color: white;
-            padding: 30px 20px;
-            text-align: center;
-            border-top: 1px solid #eee;
-            position: relative;
-        }
-        .promo-banner .rhombus-group {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin: 20px 0;
-        }
-        .rhombus {
-            width: 20px;
-            height: 20px;
-            transform: rotate(45deg);
-        }
-        .rhombus.green { background-color: #76c7c0; }
-        .rhombus.orange { background-color: #e67e22; }
-        .rhombus.yellow { background-color: #f39c12; }
-        .promo-text {
-            font-size: 24px;
-            font-weight: bold;
-            text-transform: uppercase;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        .tasks-section {
-            padding: 30px 20px;
-            background-color: #f4fbf9;
-        }
-        .tasks-section h2 {
-            font-size: 32px;
-            margin-bottom: 30px;
-            max-width: 1000px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .tasks-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .task-item {
-            background: #e0f2f1;
-            padding: 20px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            font-size: 18px;
-        }
-        .check-icon {
-            color: #2ecc71;
-            font-size: 24px;
-            font-weight: bold;
-        }
-
-        /* Секция с ролями — горизонтальное расположение */
-        .roles-section {
-            padding: 30px 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .roles-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        .role-card {
-            flex: 1 1 300px; /* на узких экранах переносятся */
-            background-color: #d1f2eb;
-            border-radius: 20px;
-            padding: 30px;
-        }
-        .role-card h2 {
-            font-size: 36px;
-            margin-top: 0;
-        }
-        .role-card ul {
-            list-style: none;
-            padding: 0;
-        }
-        .role-card ul li {
-            position: relative;
-            padding-left: 20px;
-            margin-bottom: 10px;
-        }
-        .role-card ul li::before {
-            content: "•";
-            position: absolute;
-            left: 0;
-            font-weight: bold;
-        }
-        /* Второй блок (студенты) можно слегка изменить фон для контраста */
-        .role-card.students {
-            background-color: #e0f2f1;
-        }
-
-        @media (max-width: 768px) {
-            .tasks-grid { grid-template-columns: 1fr; }
-            .roles-container { flex-direction: column; }
-        }
-    </style>
+<style>
+    .home-video {
+        max-width: 1200px;   /* было 800px */
+        margin: 20px auto;   /* уменьшен верхний отступ */
+        padding: 0 20px 40px;
+        text-align: center;
+    }
+    .home-video h2 {
+        margin-bottom: 25px;
+        color: #0056b3;
+        font-size: 2.2rem;  /* крупнее заголовок */
+    }
+    .video-container {
+        position: relative;
+        padding-bottom: 56.25%; /* 16:9 */
+        height: 0;
+        overflow: hidden;
+        max-width: 100%;
+        background: #000;
+        border-radius: 16px;
+        box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+    }
+    .video-container video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        object-fit: cover;   /* заполняет контейнер */
+    }
+    .home-video p {
+        margin-top: 20px;
+        color: #555;
+        font-size: 1.1rem;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-    <section class="intro-section">
-        <h1>«Джалинга» — интерактивные технологии для цифровой трансформации</h1>
-        <p>Универсальная технологическая инфраструктура для обучения, передачи знаний, развития людей и развития компаний.</p>
-    </section>
-
-    <section class="tech-global">
-        <h2><span class="highlight-orange">Единая технология</span> для образования, бизнеса и корпораций, которую используют по <span class="highlight-orange">всему миру</span></h2>
-        <p>Решения «Джалинга» работают в школах, колледжах и университетах, а также в корпорациях и бизнесе.</p>
-        <p>Там, где нужно обучать тысячи людей, сохранять знания и обеспечивать стабильное качество обучения и коммуникаций, используются технологические решения - проверенные в образовательной и корпоративной среде.</p>
-    </section>
-
-    <section class="promo-banner">
-        <div class="rhombus-group">
-            <div class="rhombus green"></div>
-            <div class="rhombus orange"></div>
-            <div class="rhombus yellow"></div>
-        </div>
-        <div class="promo-text">
-            Простота и съемка видеоматериалов в 4K позволяют создавать видеоматериалы 
-            и проводить живые онлайн-трансляции быстрее и результативнее, 
-            с точки зрения вовлечения и усвоения материала студентами.
-        </div>
-        <div class="rhombus-group">
-            <div class="rhombus green"></div>
-            <div class="rhombus orange"></div>
-            <div class="rhombus yellow"></div>
-        </div>
-    </section>
-
-    <section class="tasks-section">
-        <h2>Какие задачи вузов решает медиа-центр</h2>
-        <div class="tasks-grid">
-            <div class="task-item"><span class="check-icon">✓</span> Повышение качества образования</div>
-            <div class="task-item"><span class="check-icon">✓</span> Оптимизация затрат на создание контента</div>
-            <div class="task-item"><span class="check-icon">✓</span> Сохранение и тиражирование интеллектуального капитала вуза</div>
-            <div class="task-item"><span class="check-icon">✓</span> Маркетинг программ дополнительного профессионального образования</div>
-            <div class="task-item"><span class="check-icon">✓</span> Повышение конкурентоспособности вуза</div>
-            <div class="task-item"><span class="check-icon">✓</span> Выполнение КЦП через работу и создание качественного контента в соцсетях</div>
-        </div>
-    </section>
-
-    <section class="roles-section">
-        <div class="roles-container">
-            <div class="role-card">
-                <h2>Преподаватели</h2>
-                <ul>
-                    <li>упаковка экспертизы в авторские цифровые курсы</li>
-                    <li>сокращение рутины и проведение повторяющихся лекций</li>
-                    <li>рост качества подачи материала и вовлечённости студентов</li>
-                    <li>фокус на науке, методологии и развитии вместо операционных задач</li>
-                </ul>
-            </div>
-            <div class="role-card students">
-                <h2>Студенты</h2>
-                <ul>
-                    <li>доступ к учебным материалам в удобном цифровом формате</li>
-                    <li>обучение в очном, дистанционном и гибридном формате</li>
-                    <li>единый уровень качества преподавания по дисциплинам</li>
-                    <li>повышение наглядности и понятности теоретического материала</li>
-                    <li>более эффективная подготовка к экзаменам и зачётам</li>
-                    <li>упрощённая адаптация первокурсников и иностранных студентов</li>
-                </ul>
-            </div>
-        </div>
-    </section>
+<div class="home-video">
+    <h2>Добро пожаловать в студию «Джалинга»</h2>
+    <div class="video-container">
+        <video autoplay muted loop playsinline>
+            <source src="{{ MEDIA_URL }}videos/jalinga_studios.mp4" type="video/mp4">
+            Ваш браузер не поддерживает видео.
+        </video>
+    </div>
+</div>
 {% endblock %}
