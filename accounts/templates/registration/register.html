@@ -1,91 +1,78 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Регистрация</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;   /* выравнивание по верху */
-            min-height: 100vh;
-            margin: 0;
-            padding-top: 120px;        /* отступ сверху – регулируй под себя */
-            background-color: #ffffff;
-        }
-        .register-container {
-            width: 100%;
-            max-width: 400px;
-            padding: 20px;
-            text-align: center;
-        }
-        input:not([type="checkbox"]) {
-            width: 100%;
-            padding: 12px 15px;
-            margin: 8px 0;
-            display: inline-block;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 16px;
-            color: #333;
-        }
-        input::placeholder { color: #888; }
-        .btn-submit {
-            width: 100%;
-            background-color: #0066b2;
-            color: white;
-            padding: 12px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: 500;
-        }
-        .btn-submit:hover { background-color: #005596; }
-        .footer-links {
-            margin-top: 15px;
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-        .footer-links a {
-            color: #0066b2;
-            text-decoration: none;
-            font-size: 14px;
-        }
-        .footer-links a:hover { text-decoration: underline; }
-        .helptext { font-size: 12px; color: #666; display: block; text-align: left; margin: 2px 0 8px; }
-        .errorlist { color: #dc3545; list-style: none; padding: 0; margin: 5px 0; }
-    </style>
-</head>
-<body>
-<div class="register-container">
-    <h2>Регистрация</h2>
-    <form method="post" novalidate>
-        {% csrf_token %}
-        {% for field in form %}
-            {% if field.name != 'is_teacher' %}
-                <div style="text-align: left;">
-                    {{ field.label_tag }}
-                    {{ field }}
-                    {% if field.help_text %}
-                        <small class="helptext">{{ field.help_text }}</small>
-                    {% endif %}
-                    {% for error in field.errors %}
-                        <p class="errorlist">{{ error }}</p>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endfor %}
-        <button type="submit" class="btn-submit">Зарегистрироваться</button>
-    </form>
-    <div class="footer-links">
-        <a href="{% url 'login' %}">Уже есть аккаунт? Войти</a>
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Регистрация{% endblock %}
+
+{% block extra_head %}
+<style>
+    .register-page {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding-top: 80px;
+        min-height: 60vh;
+    }
+    .register-container {
+        width: 100%;
+        max-width: 450px;
+        padding: 25px;
+        text-align: center;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    input:not([type="checkbox"]) {
+        width: 100%;
+        padding: 10px 12px;
+        margin: 6px 0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 15px;
+    }
+    .btn-submit {
+        width: 100%;
+        background-color: #0066b2;
+        color: white;
+        padding: 12px;
+        margin: 10px 0;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: 500;
+    }
+    .btn-submit:hover { background-color: #005596; }
+    .helptext { font-size: 12px; color: #666; display: block; text-align: left; margin: 2px 0 8px; }
+    .errorlist { color: #dc3545; list-style: none; padding: 0; margin: 5px 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="register-page">
+    <div class="register-container">
+        <h2>Регистрация</h2>
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% for field in form %}
+                {% if field.name != 'is_teacher' %}
+                    <div style="text-align: left;">
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {% if field.help_text %}
+                            <small class="helptext">{{ field.help_text }}</small>
+                        {% endif %}
+                        {% for error in field.errors %}
+                            <p class="errorlist">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+            <button type="submit" class="btn-submit">Зарегистрироваться</button>
+        </form>
+        <div class="footer-links" style="margin-top: 15px;">
+            <a href="{% url 'login' %}">Уже есть аккаунт? Войти</a>
+        </div>
     </div>
 </div>
-</body>
-</html>
+{% endblock %}
