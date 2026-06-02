@@ -1,4 +1,6 @@
+import csv
 import json
+from django.http import HttpResponse
 import datetime
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -12,6 +14,7 @@ from accounts.models import CustomUser
 from accounts.forms import CustomUserChangeForm
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import user_passes_test
+from django.contrib.admin.views.decorators import staff_member_required
 
 def home(request):
     return render(request, 'index.html')
@@ -476,3 +479,72 @@ def schedule_view(request):
 def schedule_data(request):
     # Этот эндпоинт больше не нужен, но оставим заглушку для совместимости
     return JsonResponse({'bookings': []})
+
+@staff_member_required
+def export_bookings(request):
+    fmt = request.GET.get('format', 'csv').lower()
+    bookings = Booking.objects.select_related('user').prefetch_related(
+        'files', 'group_members', 'equipment'
+    ).all()
+
+    # Подготовка данных в виде списка словарей
+    data = []
+    for b in bookings:
+        data.append({
+            'ID': b.id,
+            'User': b.user.email,
+            'Start': b.start_time.isoformat(),
+            'End': b.end_time.isoformat(),
+            'Description': b.description or '',
+            'Status': b.status,
+            'Created': b.created_at.isoformat(),
+            'Files': ', '.join(f.file.name for f in b.files.all()),
+            'Group Members': ', '.join(
+                f'{m.full_name} ({m.email})' for m in b.group_members.all()
+            ),
+            'Equipment': ', '.join(eq.name for eq in b.equipment.all()),
+        })
+
+    if fmt == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="bookings.csv"'
+        writer = csv.DictWriter(response, fieldnames=data[0].keys() if data else [])
+        writer.writeheader()
+        writer.writerows(data)
+        return response
+
+    elif fmt == 'json':
+        response = HttpResponse(
+            json.dumps(data, ensure_ascii=False, indent=2),
+            content_type='application/json'
+        )
+        response['Content-Disposition'] = 'attachment; filename="bookings.json"'
+        return response
+
+    elif fmt == 'xlsx':
+        try:
+            import openpyxl
+            from openpyxl.utils import get_column_letter
+        except ImportError:
+            return HttpResponse('openpyxl not installed', status=500)
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        if data:
+            headers = list(data[0].keys())
+            for col_num, header in enumerate(headers, 1):
+                col_letter = get_column_letter(col_num)
+                ws[f'{col_letter}1'] = header
+            for row_num, row in enumerate(data, 2):
+                for col_num, header in enumerate(headers, 1):
+                    col_letter = get_column_letter(col_num)
+                    ws[f'{col_letter}{row_num}'] = row[header]
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="bookings.xlsx"'
+        wb.save(response)
+        return response
+
+    return HttpResponse('Unsupported format', status=400)

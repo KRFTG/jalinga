@@ -12,4 +12,5 @@ urlpatterns = [
     path('calendar-data/', views.get_calendar_data, name='get_calendar_data'),
     path('schedule/', views.schedule_view, name='schedule'),
     path('schedule/data/', views.schedule_data, name='schedule_data'),
+    path('admin/export/', views.export_bookings, name='admin_export'),
 ]

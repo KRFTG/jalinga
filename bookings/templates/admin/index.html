@@ -33,6 +33,18 @@
     </div>
     <canvas id="bookingChart" width="400" height="180"></canvas>
 
+    <div style="margin-top: 15px; display: flex; align-items: center; gap: 10px;">
+        <select id="export-format" style="padding: 6px 10px; border: 1px solid #ced4da; border-radius: 4px;">
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+            <option value="xlsx">Excel</option>
+        </select>
+        <button id="export-btn" style="padding: 6px 14px; background: #6c757d; color: #fff; border: none; border-radius: 4px; cursor: pointer;">
+            Экспорт
+        </button>
+        <span id="export-status" style="color: #555; display: none;"></span>
+    </div>
+
     <!-- Оборудование -->
     <h3 style="margin-top: 30px;">🛠 Использование оборудования</h3>
     <table style="width: 100%; border-collapse: collapse; background: #fff;">
@@ -92,5 +104,44 @@ function loadChart(days) {
 }
 
 document.addEventListener('DOMContentLoaded', () => loadChart(7));
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var exportBtn = document.getElementById('export-btn');
+    var statusEl = document.getElementById('export-status');
+    var formatSelect = document.getElementById('export-format');
+
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function() {
+            var fmt = formatSelect.value;
+            statusEl.style.display = 'inline';
+            statusEl.textContent = 'Preparing file...';
+
+            var url = '{% url "bookings:admin_export" %}?format=' + fmt;
+            fetch(url)
+                .then(function(response) {
+                    if (!response.ok) throw new Error('Download failed');
+                    return response.blob();
+                })
+                .then(function(blob) {
+                    var downloadUrl = window.URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = 'bookings.' + fmt;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(downloadUrl);
+                    statusEl.textContent = 'Download started';
+                    setTimeout(function() { statusEl.style.display = 'none'; }, 3000);
+                })
+                .catch(function() {
+                    statusEl.textContent = 'Error downloading';
+                    setTimeout(function() { statusEl.style.display = 'none'; }, 3000);
+                });
+        });
+    }
+});
 </script>
 {% endblock %}
