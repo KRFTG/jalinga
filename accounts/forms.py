@@ -13,6 +13,9 @@ class CustomUserCreationForm(UserCreationForm):
     ]
     role = forms.ChoiceField(choices=ROLE_CHOICES, label='Роль')
 
+    first_name = forms.CharField(max_length=30, required=True, label='Имя')
+    last_name = forms.CharField(max_length=150, required=True, label='Фамилия')
+
     class Meta(UserCreationForm.Meta):
         model = User
         fields = ('email', 'first_name', 'last_name', 'middlename', 'phone')
